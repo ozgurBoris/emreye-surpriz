@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Sürpriz! 🎉</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+  <!-- Confetti Kütüphanesi -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+  
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      min-height: 100vh;
+      min-height: 100dvh;
+      background-color: #ffffff;
+      font-family: 'Poppins', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      overflow: hidden;
+      position: relative;
+    }
+
+    /* Ana Ekran Konteyneri */
+    #stage {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      min-height: 100vh;
+      min-height: 100dvh;
+      background-color: #ffffff;
+    }
+
+    /* 1. Sol Üstteki Yazı */
+    .top-left-text {
+      position: absolute;
+      top: 28px;
+      left: 24px;
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: #1e293b;
+      letter-spacing: -0.3px;
+      transition: all 0.5s ease;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .top-left-text .arrow {
+      display: inline-block;
+      font-size: 1.1rem;
+      animation: pointBottomRight 1.6s infinite ease-in-out;
+    }
+
+    @keyframes pointBottomRight {
+      0%, 100% { transform: translate(0, 0); }
+      50% { transform: translate(4px, 4px); }
+    }
+
+    /* 2. Ortadaki Büyük Yazı */
+    .center-text-box {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 90%;
+      text-align: center;
+      transition: all 0.5s ease;
+      pointer-events: none;
+    }
+
+    .center-text {
+      font-size: clamp(2rem, 7.5vw, 3.2rem);
+      font-weight: 800;
+      color: #0f172a;
+      line-height: 1.2;
+      letter-spacing: -0.5px;
+    }
+
+    .center-arrow {
+      display: block;
+      font-size: 2.2rem;
+      margin-top: 8px;
+      animation: pointTopLeft 1.6s infinite ease-in-out;
+    }
+
+    @keyframes pointTopLeft {
+      0%, 100% { transform: translate(0, 0); }
+      50% { transform: translate(-5px, -5px); }
+    }
+
+    /* 3. Sağ Alttaki Buton */
+    .bottom-right-container {
+      position: absolute;
+      bottom: 34px;
+      right: 24px;
+      transition: all 0.5s ease;
+    }
+
+    .action-btn {
+      appearance: none;
+      border: none;
+      outline: none;
+      background: linear-gradient(135deg, #ff416c 0%, #ff4b2b 100%);
+      color: #ffffff;
+      font-family: inherit;
+      font-size: 1.35rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      padding: 16px 36px;
+      border-radius: 9999px;
+      cursor: pointer;
+      box-shadow: 0 10px 25px -4px rgba(255, 75, 43, 0.45), 0 4px 6px -2px rgba(255, 75, 43, 0.2);
+      transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.2s ease;
+      animation: pulseBtn 2s infinite;
+      touch-action: manipulation;
+    }
+
+    .action-btn:active {
+      transform: scale(0.92);
+      box-shadow: 0 4px 12px rgba(255, 75, 43, 0.35);
+    }
+
+    @keyframes pulseBtn {
+      0% {
+        box-shadow: 0 0 0 0 rgba(255, 75, 43, 0.6);
+      }
+      70% {
+        box-shadow: 0 0 0 18px rgba(255, 75, 43, 0);
+      }
+      100% {
+        box-shadow: 0 0 0 0 rgba(255, 75, 43, 0);
+      }
+    }
+
+    /* Yok oluş efekti */
+    .fade-out {
+      opacity: 0 !important;
+      transform: scale(0.8) !important;
+      pointer-events: none !important;
+    }
+
+    /* 4. Sürpriz Ekranı (Fotoğraf ve Yazı) */
+    #surprise-container {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.4s ease;
+      z-index: 10;
+    }
+
+    #surprise-container.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    /* Polaroid Tarzı Özel Kart */
+    .photo-card {
+      background: #ffffff;
+      padding: 16px 16px 20px 16px;
+      border-radius: 24px;
+      box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.18), 0 0 25px rgba(255, 75, 43, 0.15);
+      border: 1px solid rgba(0, 0, 0, 0.05);
+      max-width: 360px;
+      width: 100%;
+      text-align: center;
+      transform: scale(0.4) translateY(80px) rotate(-8deg);
+      opacity: 0;
+      transition: transform 0.8s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.5s ease;
+    }
+
+    #surprise-container.active .photo-card {
+      transform: scale(1) translateY(0) rotate(0deg);
+      opacity: 1;
+    }
+
+    .media-wrapper {
+      width: 100%;
+      max-height: 52vh;
+      border-radius: 16px;
+      overflow: hidden;
+      background-color: #0f172a;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .media-wrapper video {
+      width: 100%;
+      max-height: 52vh;
+      display: none;
+      border-radius: 16px;
+      object-fit: contain;
+      background: #000;
+    }
+
+    .media-wrapper img {
+      width: 100%;
+      aspect-ratio: 1 / 1;
+      object-fit: cover;
+      display: block;
+      border-radius: 16px;
+      transition: transform 0.5s ease;
+    }
+
+    /* Doğum Günü Kutlama Yazısı */
+    .birthday-title {
+      margin-top: 16px;
+      font-size: 1.75rem;
+      font-weight: 900;
+      color: #0f172a;
+      line-height: 1.25;
+      letter-spacing: -0.5px;
+      background: linear-gradient(135deg, #ff416c 0%, #ff4b2b 50%, #f97316 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      animation: gentleWiggle 3s infinite ease-in-out;
+    }
+
+    .birthday-subtitle {
+      margin-top: 6px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: #64748b;
+    }
+
+    @keyframes gentleWiggle {
+      0%, 100% { transform: rotate(0deg); }
+      25% { transform: rotate(-1.5deg); }
+      75% { transform: rotate(1.5deg); }
+    }
+
+    /* Ufak Balonlar ve Işıltılar */
+    .floating-badge {
+      display: inline-block;
+      margin-top: 14px;
+      background: #fef2f2;
+      color: #ef4444;
+      font-size: 0.85rem;
+      font-weight: 700;
+      padding: 6px 14px;
+      border-radius: 50px;
+    }
+  </style>
+</head>
+<body>
+
+  <div id="stage">
+    <!-- Sol Üst: Sağ Alta Bak -->
+    <div class="top-left-text" id="topLeft">
+      <span>Sağ alta bak</span>
+      <span class="arrow">↘</span>
+    </div>
+
+    <!-- Ortada: Sol Üste Bak -->
+    <div class="center-text-box" id="centerBox">
+      <div class="center-text">Sol üste bak</div>
+      <div class="center-arrow">↖</div>
+    </div>
+
+    <!-- Sağ Alt: Bas Butonu -->
+    <div class="bottom-right-container" id="bottomRight">
+      <button class="action-btn" id="btnBas" aria-label="Bas">Bas</button>
+    </div>
+
+    <!-- Sürpriz Bölümü: Video/Fotoğraf ve Doğum Günü Kutlaması -->
+    <div id="surprise-container">
+      <div class="photo-card">
+        <div class="media-wrapper">
+          <!-- Video Desteği (video.mp4) -->
+          <video id="friendVideo" playsinline controls preload="auto">
+            <source src="video.mp4" type="video/mp4">
+            <source src="video.mov" type="video/quicktime">
+            <source src="video.webm" type="video/webm">
+          </video>
+          <!-- Fotoğraf Desteği (foto.jpg veya placeholder) -->
+          <img id="friendPhoto" src="foto.jpg" alt="Emre" onerror="this.onerror=null; this.src='placeholder.svg';">
+        </div>
+        <h1 class="birthday-title">İyi ki doğdun Emre! 🎉</h1>
+        <p class="birthday-subtitle">Yeni yaşın sana sağlık, mutluluk ve başarı getirsin! 🎂✨</p>
+        <span class="floating-badge">🎈 Nice Mutlu Yıllara!</span>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const btnBas = document.getElementById('btnBas');
+    const topLeft = document.getElementById('topLeft');
+    const centerBox = document.getElementById('centerBox');
+    const bottomRight = document.getElementById('bottomRight');
+    const surpriseContainer = document.getElementById('surprise-container');
+    const friendVideo = document.getElementById('friendVideo');
+    const friendPhoto = document.getElementById('friendPhoto');
+
+    let hasVideo = false;
+
+    // Video kontrolü: Klasörde video.mp4 varsa video aktif olur, yoksa fotoğraf gösterilir
+    friendVideo.addEventListener('loadeddata', () => {
+      hasVideo = true;
+      friendVideo.style.display = 'block';
+      friendPhoto.style.display = 'none';
+    });
+    friendVideo.addEventListener('error', () => {
+      hasVideo = false;
+      friendVideo.style.display = 'none';
+      friendPhoto.style.display = 'block';
+    });
+
+    // Eğlenceli "Doğum Günü Melodisi" Sentezleyici (Web Audio API)
+    // Sadece video yoksa çalar, videoluysa videonun kendi sesi çalar!
+    function playBirthdayChime() {
+      try {
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        if (!AudioContext) return;
+        const ctx = new AudioContext();
+
+        const notes = [
+          { f: 261.63, d: 0.25 }, // C4
+          { f: 261.63, d: 0.25 }, // C4
+          { f: 293.66, d: 0.5 },  // D4
+          { f: 261.63, d: 0.5 },  // C4
+          { f: 349.23, d: 0.5 },  // F4
+          { f: 329.63, d: 0.8 },  // E4
+        ];
+
+        let time = ctx.currentTime;
+        notes.forEach(note => {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(note.f, time);
+
+          gain.gain.setValueAtTime(0.2, time);
+          gain.gain.exponentialRampToValueAtTime(0.001, time + note.d);
+
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+
+          osc.start(time);
+          osc.stop(time + note.d);
+          time += note.d * 0.95;
+        });
+      } catch (e) {
+        console.log("Audio not supported or blocked", e);
+      }
+    }
+
+    // Konfeti Yağmuru Efekti
+    function fireConfetti() {
+      if (typeof confetti === 'function') {
+        confetti({
+          particleCount: 80,
+          spread: 70,
+          origin: { y: 0.6 }
+        });
+
+        setTimeout(() => {
+          confetti({
+            particleCount: 50,
+            angle: 60,
+            spread: 55,
+            origin: { x: 0 }
+          });
+          confetti({
+            particleCount: 50,
+            angle: 120,
+            spread: 55,
+            origin: { x: 1 }
+          });
+        }, 300);
+
+        setTimeout(() => {
+          confetti({
+            particleCount: 30,
+            spread: 100,
+            origin: { y: 0.4 },
+            shapes: ['star'],
+            colors: ['#FFE400', '#FFBD00', '#E89400', '#FFCA6C', '#FDFFB8']
+          });
+        }, 700);
+      }
+    }
+
+    // Tıklama Olayı (BAS butonu)
+    btnBas.addEventListener('click', () => {
+      // 1. Yazıları ve butonu zarifçe yok et
+      topLeft.classList.add('fade-out');
+      centerBox.classList.add('fade-out');
+      bottomRight.classList.add('fade-out');
+
+      // 2. Video varsa videoyu sesli başlat, yoksa sentez melodiyi çal
+      if (hasVideo) {
+        friendVideo.currentTime = 0;
+        const playPromise = friendVideo.play();
+        if (playPromise !== undefined) {
+          playPromise.catch(() => {
+            // Tarayıcı sesli otomatik oynatmaya izin vermezse sessiz dene
+            friendVideo.muted = true;
+            friendVideo.play();
+          });
+        }
+      } else {
+        playBirthdayChime();
+      }
+
+      // 3. Sürprizi animasyonla getir ve konfeti patlat
+      setTimeout(() => {
+        surpriseContainer.classList.add('active');
+        fireConfetti();
+      }, 250);
+    });
+  </script>
+</body>
+</html>
