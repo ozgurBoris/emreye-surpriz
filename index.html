@@ -208,7 +208,7 @@
     .media-wrapper video {
       width: 100%;
       max-height: 52vh;
-      display: none;
+      display: block;
       border-radius: 16px;
       object-fit: contain;
       background: #000;
@@ -218,7 +218,7 @@
       width: 100%;
       aspect-ratio: 1 / 1;
       object-fit: cover;
-      display: block;
+      display: none;
       border-radius: 16px;
       transition: transform 0.5s ease;
     }
@@ -288,7 +288,7 @@
       <div class="photo-card">
         <div class="media-wrapper">
           <!-- Video Desteği (video.mp4) -->
-          <video id="friendVideo" playsinline controls preload="auto">
+          <video id="friendVideo" playsinline webkit-playsinline x5-playsinline controls preload="auto">
             <source src="video.mp4" type="video/mp4">
             <source src="video.mov" type="video/quicktime">
             <source src="video.webm" type="video/webm">
@@ -312,19 +312,56 @@
     const friendVideo = document.getElementById('friendVideo');
     const friendPhoto = document.getElementById('friendPhoto');
 
-    let hasVideo = false;
+    let hasVideo = true;
 
-    // Video kontrolü: Klasörde video.mp4 varsa video aktif olur, yoksa fotoğraf gösterilir
-    friendVideo.addEventListener('loadeddata', () => {
+    function showPhoto() {
+      hasVideo = false;
+      friendVideo.pause();
+      friendVideo.style.display = 'none';
+      friendPhoto.style.display = 'block';
+    }
+
+    function showVideo() {
       hasVideo = true;
       friendVideo.style.display = 'block';
       friendPhoto.style.display = 'none';
+    }
+
+    // Video yüklendiğinde video görünümünü garantile
+    friendVideo.addEventListener('loadeddata', () => {
+      showVideo();
     });
+
+    // Video yüklenemezse fotoğrafa dön
     friendVideo.addEventListener('error', () => {
-      hasVideo = false;
-      friendVideo.style.display = 'none';
-      friendPhoto.style.display = 'block';
+      showPhoto();
     });
+
+    // <source> etiketlerindeki hataları yakala
+    const sources = friendVideo.querySelectorAll('source');
+    let failedSources = 0;
+    sources.forEach(source => {
+      source.addEventListener('error', () => {
+        failedSources++;
+        if (failedSources >= sources.length) {
+          showPhoto();
+        }
+      });
+    });
+
+    // Web ortamında (GitHub Pages vb.) video dosyasının varlığını arka planda kontrol et
+    if (window.location.protocol.startsWith('http')) {
+      fetch('video.mp4', { method: 'HEAD' })
+        .then(res => {
+          if (!res.ok) {
+            // video.mp4 yoksa (404) fotoğrafa geç
+            showPhoto();
+          }
+        })
+        .catch(() => {
+          // Ağ engeli varsa varsayılan durumu koru
+        });
+    }
 
     // Eğlenceli "Doğum Günü Melodisi" Sentezleyici (Web Audio API)
     // Sadece video yoksa çalar, videoluysa videonun kendi sesi çalar!
@@ -414,10 +451,15 @@
         friendVideo.currentTime = 0;
         const playPromise = friendVideo.play();
         if (playPromise !== undefined) {
-          playPromise.catch(() => {
-            // Tarayıcı sesli otomatik oynatmaya izin vermezse sessiz dene
+          playPromise.catch((err) => {
+            console.warn("Sesli oynatma engellendi, sessiz deneniyor:", err);
+            // Tarayıcı veya iOS Düşük Güç Modu sesli otomatik oynatmaya izin vermezse sessiz dene
             friendVideo.muted = true;
-            friendVideo.play();
+            friendVideo.play().catch((err2) => {
+              console.warn("Video oynatılamadı, fotoğrafa geçiliyor:", err2);
+              showPhoto();
+              playBirthdayChime();
+            });
           });
         }
       } else {
